@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitts's Law - Reaction Time Experiment</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      text-align: center;
+      background: #f4f7fa;
+      color: #333;
+      padding: 20px;
+      margin: 0;
+    }
+    h1 {
+      color: #007bff;
+      font-size: 2.3em;
+    }
+    .container {
+      max-width: 850px;
+      margin: 40px auto;
+      background: white;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    }
+    #stimulus {
+      font-size: 130px;
+      font-weight: bold;
+      margin: 50px 0;
+      color: #007bff;
+      min-height: 160px;
+      user-select: none;
+    }
+    button {
+      padding: 14px 32px;
+      font-size: 18px;
+      margin: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #007bff;
+      color: white;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    #status {
+      font-size: 1.4em;
+      margin: 25px 0;
+      min-height: 60px;
+      font-weight: 500;
+    }
+    .results {
+      margin-top: 40px;
+      text-align: left;
+      background: #f8f9fa;
+      padding: 25px;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: white;
+    }
+    .instructions {
+      font-size: 1.1em;
+      margin: 20px 0;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Fitts's Law - Human Motor Performance</h1>
+    
+    <div class="instructions">
+      <strong>Instructions:</strong><br>
+      When a letter appears on the screen, press <strong>A</strong> for left or <strong>L</strong> for right as quickly and accurately as possible.<br>
+      There will be a total of 10 trials.
+    </div>
+
+    <button id="startBtn">Start Experiment</button>
+    
+    <div id="stimulus"></div>
+    <div id="status"></div>
+
+    <div class="results" id="results" style="display: none;">
+      <h2>Experiment Results</h2>
+      <p id="summary" style="font-size: 1.3em;"></p>
+      
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Trial No.</th>
+            <th>Letter Shown</th>
+            <th>Reaction Time (ms)</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      
+      <button id="restartBtn">Restart Experiment</button>
+    </div>
+  </div>
+
+  <script>
+    const stimulusDiv = document.getElementById("stimulus");
+    const statusDiv = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const resultsDiv = document.getElementById("results");
+    const summaryP = document.getElementById("summary");
+    const tableBody = document.querySelector("#resultsTable tbody");
+    const restartBtn = document.getElementById("restartBtn");
+
+    let startTime = 0;
+    let currentLetter = "";
+    let trials = 0;
+    let reactionTimes = [];
+    let lettersShown = [];
+    const maxTrials = 10;
+
+    function showStimulus() {
+      const letters = ["A", "L"];
+      currentLetter = letters[Math.floor(Math.random() * letters.length)];
+      stimulusDiv.textContent = currentLetter;
+      startTime = Date.now();
+      lettersShown.push(currentLetter);
+    }
+
+    function nextTrial() {
+      if (trials < maxTrials) {
+        showStimulus();
+      } else {
+        finishExperiment();
+      }
+    }
+
+    function finishExperiment() {
+      stimulusDiv.textContent = "Experiment Completed";
+
+      const sum = reactionTimes.reduce((a, b) => a + b, 0);
+      const avg = (sum / reactionTimes.length).toFixed(2);
+      const minRT = Math.min(...reactionTimes);
+      const maxRT = Math.max(...reactionTimes);
+
+      summaryP.innerHTML = `
+        <strong>Average Reaction Time:</strong> ${avg} ms<br>
+        <strong>Fastest Reaction Time:</strong> ${minRT} ms<br>
+        <strong>Slowest Reaction Time:</strong> ${maxRT} ms
+      `;
+
+      // Fill results table
+      tableBody.innerHTML = "";
+      reactionTimes.forEach((rt, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${lettersShown[i]}</td>
+          <td>${rt}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      resultsDiv.style.display = "block";
+      startBtn.disabled = false;
+    }
+
+    startBtn.addEventListener("click", () => {
+      trials = 0;
+      reactionTimes = [];
+      lettersShown = [];
+      statusDiv.textContent = "";
+      resultsDiv.style.display = "none";
+      startBtn.disabled = true;
+      nextTrial();
+    });
+
+    restartBtn.addEventListener("click", () => {
+      startBtn.click();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (!currentLetter) return;
+
+      const keyPressed = e.key.toUpperCase();
+
+      if ((currentLetter === "A" && keyPressed === "A") || 
+          (currentLetter === "L" && keyPressed === "L")) {
+        
+        const reactionTime = Date.now() - startTime;
+        reactionTimes.push(reactionTime);
+
+        statusDiv.innerHTML = `Trial ${trials + 1}: ✅ Correct — ${reactionTime} ms`;
+
+        trials++;
+        currentLetter = "";
+        setTimeout(nextTrial, 700);
+      } 
+      else if (keyPressed === "A" || keyPressed === "L") {
+        statusDiv.textContent = `Trial ${trials + 1}: ❌ Wrong key! Press the correct key.`;
+      }
+    });
+  </script>
+</body>
+</html>
